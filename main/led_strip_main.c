@@ -17,7 +17,9 @@ static const char *TAG = "example";
 
 #define RMT_TX_CHANNEL RMT_CHANNEL_0
 
-#define EXAMPLE_CHASE_SPEED_MS (10)
+#define EXAMPLE_CHASE_SPEED_MS (50)
+
+#define USER_RMT_TX_GPIO (16)
 
 /**
  * @brief Simple helper function, converting HSV color space to RGB color space
@@ -71,6 +73,34 @@ void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t
     }
 }
 
+
+void chase_pattern(led_strip_t *strip, uint32_t delay_ms, uint32_t iterations) {
+    uint32_t red = 0;
+    uint32_t green = 0;
+    uint32_t blue = 0;
+    uint16_t hue = 0;
+
+    for (uint32_t iter = 0; iter < iterations; iter++) {
+        for (int i = 0; i < CONFIG_EXAMPLE_STRIP_LED_NUMBER; i++) {
+            // Build RGB values
+            hue = i * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER;
+            led_strip_hsv2rgb(hue, 100, 50, &red, &green, &blue);
+
+            // Write RGB values to strip driver
+            ESP_ERROR_CHECK(strip->set_pixel(strip, i, red, green, blue));
+
+            // Flush RGB values to LEDs
+            ESP_ERROR_CHECK(strip->refresh(strip, 100));
+
+            // Clear the LED for the next cycle
+            ESP_ERROR_CHECK(strip->clear(strip, 50));
+
+            // Delay between updates
+            vTaskDelay(pdMS_TO_TICKS(delay_ms));
+        }
+    }
+}
+
 void app_main(void)
 {
     uint32_t red = 0;
@@ -79,7 +109,7 @@ void app_main(void)
     uint16_t hue = 0;
     uint16_t start_rgb = 0;
 
-    rmt_config_t config = RMT_DEFAULT_CONFIG_TX(CONFIG_EXAMPLE_RMT_TX_GPIO, RMT_TX_CHANNEL);
+    rmt_config_t config = RMT_DEFAULT_CONFIG_TX(USER_RMT_TX_GPIO, RMT_TX_CHANNEL);
     // set counter clock to 40MHz
     config.clk_div = 2;
 
@@ -97,20 +127,24 @@ void app_main(void)
     // Show simple rainbow chasing pattern
     ESP_LOGI(TAG, "LED Rainbow Chase Start");
     while (true) {
-        for (int i = 0; i < 3; i++) {
-            for (int j = i; j < CONFIG_EXAMPLE_STRIP_LED_NUMBER; j += 3) {
-                // Build RGB values
-                hue = j * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER + start_rgb;
-                led_strip_hsv2rgb(hue, 100, 2, &red, &green, &blue);
-                // Write RGB values to strip driver
-                ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
-            }
-            // Flush RGB values to LEDs
-            ESP_ERROR_CHECK(strip->refresh(strip, 100));
-            vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-            strip->clear(strip, 50);
-            vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-        }
-        start_rgb += 60;
+
+        chase_pattern(strip, EXAMPLE_CHASE_SPEED_MS, 1);
+        // for (int i = 0; i < 3; i++) {
+        //     for (int j = i; j < CONFIG_EXAMPLE_STRIP_LED_NUMBER; j += 3) {
+        //         // Build RGB values
+        //         hue = j * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER + start_rgb;
+        //         led_strip_hsv2rgb(hue, 100, 10, &red, &green, &blue);
+        //         // Write RGB values to strip driver
+        //         ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+        //     }
+        //     // Flush RGB values to LEDs
+        //     ESP_ERROR_CHECK(strip->refresh(strip, 100));
+        //     vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
+        //     strip->clear(strip, 50);
+        //     vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
+        // }
+        // start_rgb += 60;
     }
 }
+
+
