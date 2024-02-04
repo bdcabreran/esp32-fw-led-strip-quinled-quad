@@ -19,7 +19,6 @@
 #include "led_strip.h"
 #include "driver/rmt.h"
 
-#define RMT_TX_CHANNEL RMT_CHANNEL_0
 
 static const char *TAG = "ws2812";
 #define STRIP_CHECK(a, str, goto_tag, ret_value, ...)                             \
@@ -290,9 +289,9 @@ led_strip_t *led_strip_new_rmt_ws2812(const led_strip_config_t *config, led_stri
     init_timing(led_type, counter_clk_hz, &ws2812->timing);
 
     // During initialization, after calculating the timing information
+    ws2812->rmt_channel = (rmt_channel_t)config->dev;
     rmt_channel_timings[ws2812->rmt_channel] = &ws2812->timing;
     
-    ws2812->rmt_channel = (rmt_channel_t)config->dev;
     ws2812->strip_len = config->max_leds;
 
     ESP_LOGI(TAG, "Initializing WS2812 strip on RMT channel %d", ws2812->rmt_channel);
