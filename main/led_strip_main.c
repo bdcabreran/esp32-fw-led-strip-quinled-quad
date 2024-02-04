@@ -1,3 +1,4 @@
+
 /* RMT example -- RGB LED Strip
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
@@ -5,7 +6,12 @@
    Unless required by applicable law or agreed to in writing, this
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
+
+   Author: Bayron Cabrera
+   Email: bayron.nanez@gmail.com
 */
+
+
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,12 +19,26 @@
 #include "driver/rmt.h"
 #include "led_strip.h"
 
+
+void print_startup_message() {
+    const char* projectName = "esp32-fw-led-stript-quinled-quad";
+    const char* author = "Bayron Cabrera";
+    const char* date = "2023-01-03";
+    const char* version = "1.0.0";
+
+    printf("Project: %s\n", projectName);
+    printf("Author: %s\n", author);
+    printf("Date: %s\n", date);
+    printf("Version: %s\n", version);
+}
+
+
 static const char *TAG = "example";
 
 #define RMT_TX_CHANNEL RMT_CHANNEL_0
 
 #define EXAMPLE_CHASE_SPEED_MS (50)
-
+#define USER_STRIP_LED_NUMBER (28)
 #define USER_RMT_TX_GPIO (16)
 
 /**
@@ -75,17 +95,12 @@ void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t
 
 
 void chase_pattern(led_strip_t *strip, uint32_t delay_ms, uint32_t iterations) {
-    uint32_t red = 0;
-    uint32_t green = 0;
-    uint32_t blue = 0;
-    uint16_t hue = 0;
+    uint32_t red = 255;   // Set red value to maximum (255)
+    uint32_t green = 0;   // Set green value to minimum (0)
+    uint32_t blue = 0;    // Set blue value to minimum (0)
 
     for (uint32_t iter = 0; iter < iterations; iter++) {
         for (int i = 0; i < CONFIG_EXAMPLE_STRIP_LED_NUMBER; i++) {
-            // Build RGB values
-            hue = i * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER;
-            led_strip_hsv2rgb(hue, 100, 50, &red, &green, &blue);
-
             // Write RGB values to strip driver
             ESP_ERROR_CHECK(strip->set_pixel(strip, i, red, green, blue));
 
@@ -103,6 +118,9 @@ void chase_pattern(led_strip_t *strip, uint32_t delay_ms, uint32_t iterations) {
 
 void app_main(void)
 {
+
+    print_startup_message();
+
     uint32_t red = 0;
     uint32_t green = 0;
     uint32_t blue = 0;
@@ -117,8 +135,8 @@ void app_main(void)
     ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
 
     // install ws2812 driver
-    led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(CONFIG_EXAMPLE_STRIP_LED_NUMBER, (led_strip_dev_t)config.channel);
-    led_strip_t *strip = led_strip_new_rmt_ws2812(&strip_config);
+    led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(USER_STRIP_LED_NUMBER, (led_strip_dev_t)config.channel);
+    led_strip_t *strip = led_strip_new_rmt_ws2812(&strip_config, LED_STRIP_WS2812);
     if (!strip) {
         ESP_LOGE(TAG, "install WS2812 driver failed");
     }
@@ -128,22 +146,22 @@ void app_main(void)
     ESP_LOGI(TAG, "LED Rainbow Chase Start");
     while (true) {
 
-        chase_pattern(strip, EXAMPLE_CHASE_SPEED_MS, 1);
-        // for (int i = 0; i < 3; i++) {
-        //     for (int j = i; j < CONFIG_EXAMPLE_STRIP_LED_NUMBER; j += 3) {
-        //         // Build RGB values
-        //         hue = j * 360 / CONFIG_EXAMPLE_STRIP_LED_NUMBER + start_rgb;
-        //         led_strip_hsv2rgb(hue, 100, 10, &red, &green, &blue);
-        //         // Write RGB values to strip driver
-        //         ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
-        //     }
-        //     // Flush RGB values to LEDs
-        //     ESP_ERROR_CHECK(strip->refresh(strip, 100));
-        //     vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-        //     strip->clear(strip, 50);
-        //     vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
-        // }
-        // start_rgb += 60;
+        // chase_pattern(strip, EXAMPLE_CHASE_SPEED_MS, 1);
+        for (int i = 0; i < 3; i++) {
+            for (int j = i; j < USER_STRIP_LED_NUMBER; j += 3) {
+                // Build RGB values
+                hue = j * 360 / USER_STRIP_LED_NUMBER + start_rgb;
+                led_strip_hsv2rgb(hue, 100, 2, &red, &green, &blue);
+                // Write RGB values to strip driver
+                ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
+            }
+            // Flush RGB values to LEDs
+            ESP_ERROR_CHECK(strip->refresh(strip, 100));
+            vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
+            strip->clear(strip, 50);
+            vTaskDelay(pdMS_TO_TICKS(EXAMPLE_CHASE_SPEED_MS));
+        }
+        start_rgb += 60;
     }
 }
 
