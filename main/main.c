@@ -15,6 +15,7 @@
 #include "button.h"
 #include "touch.h"
 #include "event_router.h"
+#include "led_control.h"
 
 
 static const char *TAG = "led_strip_example";
@@ -215,13 +216,14 @@ void led_rainbow_chase_task2(void *pvParameters) {
  */
 void app_main(void)
 {
-    print_startup_message();
-    xTaskCreate(led_rainbow_chase_task1, "LED Rainbow Chase Task 1", 2048, NULL, 5, NULL);
-    xTaskCreate(led_rainbow_chase_task2, "LED Rainbow Chase Task 2", 2048, NULL, 5, NULL);
+    // xTaskCreate(led_rainbow_chase_task1, "LED Rainbow Chase Task 1", 2048, NULL, 5, NULL);
+    // xTaskCreate(led_rainbow_chase_task2, "LED Rainbow Chase Task 2", 2048, NULL, 5, NULL);
 
+    print_startup_message();
     event_router_init();
     button_init();
     touch_init();
+    led_control_init();
 
 }
 
