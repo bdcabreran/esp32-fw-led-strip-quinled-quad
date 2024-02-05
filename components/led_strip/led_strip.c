@@ -382,3 +382,18 @@ esp_err_t led_strip_denit(led_strip_t *strip)
 
     return ESP_OK;
 }
+
+
+void set_led_color(led_strip_t *strip, uint32_t index, uint32_t red, uint32_t green, uint32_t blue) {
+    // Set the color of the LED at the specified index
+    esp_err_t ret = strip->set_pixel(strip, index, red, green, blue);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Set LED Color failed");
+    }
+
+    // Refresh the strip to apply the changes
+    ret = strip->refresh(strip, 100);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Refresh LED Color failed");
+    }
+}

@@ -11,6 +11,10 @@
 #include "esp_log.h"
 #include "driver/rmt.h"
 #include "led_strip.h"
+#include "driver/touch_pad.h"
+#include "button.h"
+#include "event_router.h"
+
 
 static const char *TAG = "led_strip_example";
 
@@ -63,6 +67,11 @@ void print_startup_message() {
  *
  * Wiki: https://en.wikipedia.org/wiki/HSL_and_HSV
  *
+ * HSV Color Space: In the HSV model, Hue represents the color type, Saturation represents the intensity of the color, and Value represents the brightness of the color.
+ *
+ * Hue (H) is measured in degrees, ranging from 0 to 360, where each value corresponds to a color on the color wheel (e.g., 0 or 360 is red, 120 is green, 240 is blue).
+ * Saturation (S) is a percentage value from 0 to 100, where 0 means a shade of gray and 100 represents the full color.
+ * Value (V) is also a percentage from 0 to 100, where 0 is completely black, and 100 is the brightest and reveals the most of the color.
  */
 void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t *g, uint32_t *b)
 {
@@ -111,29 +120,50 @@ void led_strip_hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t
 }
 
 /**
- * @brief Simple helper function, to create a rainbow chase effect
- *
+ * @brief Creates a rainbow chase effect on an LED strip.
+ * 
+ * This function cycles through a rainbow of colors and applies them to the LED strip,
+ * creating a "chasing" effect where groups of LEDs light up in sequence along the strip.
+ * 
+ * @param strip The LED strip object.
+ * @param start_rgb The starting hue value for the rainbow effect (0-359 degrees).
+ * @param chase_speed_ms The speed of the chase effect, in milliseconds.
+ * @param led_number The total number of LEDs in the strip.
  */
 void led_rainbow_chase(led_strip_t *strip, uint16_t start_rgb, uint16_t chase_speed_ms, uint16_t led_number) {
-    uint32_t red = 0;
-    uint32_t green = 0;
-    uint32_t blue = 0;
-    uint16_t hue = 0;
+    uint32_t red = 0;   
+    uint32_t green = 0; 
+    uint32_t blue = 0;  
+    uint16_t hue = 0;   
 
+    // Loop to create the chase effect in three steps, lighting up every third LED in sequence.
     for (int i = 0; i < 3; i++) {
+        // Loop over every third LED starting from 'i' to create a spaced-out chase effect.
         for (int j = i; j < led_number; j += 3) {
-            // Build RGB values
+            // Calculate the hue value for the current LED based on its position and the starting hue.
+            // This creates a gradual rainbow across the strip.
             hue = j * 360 / led_number + start_rgb;
+
+            // Convert the HSV values to RGB values. Here, the saturation is set to 100%,
+            // and the value (brightness) is set to 20% for all LEDs.
             led_strip_hsv2rgb(hue, 100, 20, &red, &green, &blue);
-            // Write RGB values to strip driver
+
+            // Set the calculated RGB color to the current LED.
             ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
         }
-        // Flush RGB values to LEDs
+        // Send the updated color information to the LED strip to display the changes.
         ESP_ERROR_CHECK(strip->refresh(strip, 100));
+
+        // Wait for the specified chase speed duration before continuing to the next step.
         vTaskDelay(pdMS_TO_TICKS(chase_speed_ms));
+
+        // Clear the strip after each chase step to turn off all LEDs before the next cycle starts.
         strip->clear(strip, 50);
+
+        // Wait again for the specified duration to maintain consistent timing.
         vTaskDelay(pdMS_TO_TICKS(chase_speed_ms));
     }
+    // Increment the starting hue by 60 degrees to shift the colors for the next function call.
     start_rgb += 60;
 }
 
@@ -187,6 +217,9 @@ void app_main(void)
     print_startup_message();
     xTaskCreate(led_rainbow_chase_task1, "LED Rainbow Chase Task 1", 2048, NULL, 5, NULL);
     xTaskCreate(led_rainbow_chase_task2, "LED Rainbow Chase Task 2", 2048, NULL, 5, NULL);
+
+    event_router_init();
+    button_init();
 
 }
 
