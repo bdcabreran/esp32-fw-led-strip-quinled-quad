@@ -27,6 +27,7 @@ const char *task_id_name[TASK_LAST] =
 {
     "TASK_INVALID",
     "TASK_BUTTON",
+    "TASK_TOUCH_SENSOR",
     "TASK_LED_CONTROL",
 };
 
@@ -34,6 +35,7 @@ const char *event_id_name[] =
 {
     "EVT_INVALID",
     BUTTON_EVENTS_NAME,
+    TOUCH_SENSOR_EVENTS_NAME,
 };
 
 #define MAX_QUEUE_ITEMS           (15)
@@ -115,10 +117,13 @@ void event_router_task(void *args)
             switch (event.dest)
             {
             case TASK_BUTTON:
-                // water_dispenser_write_event(&event);
+                // button_write_event(&event);
                 break;
             case TASK_LED_CONTROL:
-                // ui_write_event(&event);
+                // led_control_write_event(&event);
+                break;
+            case TASK_TOUCH_SENSOR:
+                // touch_sensor_write_event(&event);
                 break;
             default:
                 EVT_ROUTER_LOGW("Task id not handled-> [%d]", event.dest);

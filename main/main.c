@@ -13,6 +13,7 @@
 #include "led_strip.h"
 #include "driver/touch_pad.h"
 #include "button.h"
+#include "touch.h"
 #include "event_router.h"
 
 
@@ -220,6 +221,7 @@ void app_main(void)
 
     event_router_init();
     button_init();
+    touch_init();
 
 }
 
