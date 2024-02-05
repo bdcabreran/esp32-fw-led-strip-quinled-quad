@@ -120,7 +120,7 @@ void event_router_task(void *args)
                 // button_write_event(&event);
                 break;
             case TASK_LED_CONTROL:
-                // led_control_write_event(&event);
+                led_control_write_event(&event);
                 break;
             case TASK_TOUCH_SENSOR:
                 // touch_sensor_write_event(&event);
