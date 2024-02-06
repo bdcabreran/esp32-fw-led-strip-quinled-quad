@@ -23,9 +23,9 @@ if
 #else
 // Tag used for ESP serial console messages
 	static const char *TAG = "[BUTTON]";
-	#define BUTTON_LOGI(...) ESP_LOGI(TAG, LOG_COLOR(LOG_COLOR_BROWN) __VA_ARGS__)
-	#define BUTTON_LOGE(...) ESP_LOGE(TAG, LOG_COLOR(LOG_COLOR_BROWN) __VA_ARGS__)
-	#define BUTTON_LOGW(...) ESP_LOGW(TAG, LOG_COLOR(LOG_COLOR_BROWN) __VA_ARGS__)
+	#define BUTTON_LOGI(...) ESP_LOGI(TAG, LOG_COLOR(LOG_COLOR_BLUE) __VA_ARGS__)
+	#define BUTTON_LOGE(...) ESP_LOGE(TAG, LOG_COLOR(LOG_COLOR_BLUE) __VA_ARGS__)
+	#define BUTTON_LOGW(...) ESP_LOGW(TAG, LOG_COLOR(LOG_COLOR_BLUE) __VA_ARGS__)
 #endif
 
 
@@ -107,16 +107,16 @@ void button_task(void* arg)
                         uint32_t duration = release_time - press_time;
                         if (duration > long_press_threshold) {
                             // Long press event
-                            button_notify_event(gpio_num, EVT_BUTTON_LONG_PRESS);
                             BUTTON_LOGI("Button %d evt [%s] time = [%d]", gpio_num, "EVT_BUTTON_LONG_PRESS", duration);
+                            button_notify_event(gpio_num, EVT_BUTTON_LONG_PRESS);
                         } else {
                             // Single press event
-                            button_notify_event(gpio_num, EVT_BUTTON_SINGLE_PRESS);
                             BUTTON_LOGI("Button %d evt [%s] time = [%d]", gpio_num, "EVT_BUTTON_SINGLE_PRESS", duration);
+                            button_notify_event(gpio_num, EVT_BUTTON_SINGLE_PRESS);
                         }
                         // Button release event
-                        button_notify_event(gpio_num, EVT_BUTTON_RELEASE);
                         BUTTON_LOGI("Button %d evt [%s]", gpio_num, "EVT_BUTTON_RELEASE");
+                        button_notify_event(gpio_num, EVT_BUTTON_RELEASE);
                     }
 
                     last_state = curr_state;

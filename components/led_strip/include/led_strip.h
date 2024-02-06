@@ -1,10 +1,13 @@
 
 
-#pragma once
+// #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
+
+#ifndef LED_STRIP_H
+#define LED_STRIP_H
 
 #include "esp_err.h"
 
@@ -167,6 +170,8 @@ void set_led_color(led_strip_t *strip, uint32_t index, uint32_t red, uint32_t gr
  */
 esp_err_t led_strip_denit(led_strip_t *strip);
 
-#ifdef __cplusplus
-}
+// #ifdef __cplusplus
+// }
+// #endif
+
 #endif

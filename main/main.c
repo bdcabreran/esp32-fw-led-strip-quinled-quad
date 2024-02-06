@@ -10,9 +10,9 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "driver/rmt.h"
-#include "led_strip.h"
 #include "driver/touch_pad.h"
 #include "button.h"
+#include "touch.h"
 #include "event_router.h"
 #include "led_control.h"
 
@@ -62,7 +62,7 @@ void print_startup_message() {
 }
 
 
-
+#if 0
 /**
  * @brief Simple helper function, converting HSV color space to RGB color space
  *
@@ -207,7 +207,7 @@ void led_rainbow_chase_task2(void *pvParameters) {
         led_rainbow_chase(strip4, start_rgb, LED4_CHASE_SPEED_MS, LED4_STRIP_LED_NUMBER);
     }
 }
-
+#endif 
 
 /**
  * @brief Main function
@@ -215,13 +215,15 @@ void led_rainbow_chase_task2(void *pvParameters) {
  */
 void app_main(void)
 {
+    // xTaskCreate(led_rainbow_chase_task1, "LED Rainbow Chase Task 1", 2048, NULL, 5, NULL);
+    // xTaskCreate(led_rainbow_chase_task2, "LED Rainbow Chase Task 2", 2048, NULL, 5, NULL);
+
     print_startup_message();
     event_router_init();
     button_init();
+    touch_init();
     led_control_init();
 
-    xTaskCreate(led_rainbow_chase_task1, "LED Rainbow Chase Task 1", 2048, NULL, 5, NULL);
-    xTaskCreate(led_rainbow_chase_task2, "LED Rainbow Chase Task 2", 2048, NULL, 5, NULL);
 }
 
 
