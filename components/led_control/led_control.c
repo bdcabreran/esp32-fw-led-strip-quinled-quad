@@ -66,6 +66,62 @@ static void enter_seq_led_strip_on(led_control_fsm_t *fsm);
 static void exit_action_led_strip_on(led_control_fsm_t *fsm);
 static void entry_action_led_strip_on(led_control_fsm_t *fsm);
 static void led_control_print_info(led_control_fsm_t *fsm);
+static void led_control_execute_animation(led_control_fsm_t *fsm, led_animation_t led_animation);
+
+
+static void led_control_execute_animation(led_control_fsm_t *fsm, led_animation_t led_animation)
+{
+    switch (led_animation)
+    {
+        case LED_ANIMATION_LED_ON:
+        {
+            // only applied to strip 1 and strip 4
+            led_strip_set_all(fsm->iface.strips[LED_STRIP_1].control, 255, 0, 0);
+            led_strip_set_all(fsm->iface.strips[LED_STRIP_4].control, 255, 0, 0);
+        }
+            break;
+
+        case LED_ANIMATION_LED_OFF:
+            // only applied to strip 1 and strip 4
+            led_strip_clear_all(fsm->iface.strips[LED_STRIP_1].control, 500);
+            led_strip_clear_all(fsm->iface.strips[LED_STRIP_4].control, 500);
+            break;
+
+        case LED_ANIMATION_LED_FORWARD_ON:
+        {
+            // Code for LED FORWARD ON animation
+            uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
+            uint32_t red = 255, green = 0, blue = 0;        // Color: Red
+            uint32_t delay_ms = fsm->iface.animation_speed; // Delay in milliseconds
+            led_strip_t *strips[LED_STRIPn] = {NULL};
+
+            for(int i = LED_STRIP_1; i < LED_STRIPn; i++) 
+                strips[i] = fsm->iface.strips[i].control;
+            
+            led_strip_forward_on_sync(strips, strip_count, red, green, blue, delay_ms);
+        }
+            break;
+
+        case LED_ANIMATION_LED_BACKWARD_OFF:
+        {
+            // Code for LED BACKWARD OFF animation
+             uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
+            uint32_t red = 0, green = 0, blue = 0;           // Color: black
+            uint32_t delay_ms = fsm->iface.animation_speed;  // Delay in milliseconds
+            led_strip_t *strips[LED_STRIPn] = {NULL};
+
+            for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
+                strips[i] = fsm->iface.strips[i].control;
+            }
+
+            led_strip_backward_off_sync(strips, strip_count, red, green, blue, delay_ms);   
+        }
+            break;
+
+        default:
+            break;
+    }
+}
 
 
 static void led_control_set_state(led_control_fsm_t *fsm, led_control_state_t state)
@@ -94,21 +150,10 @@ static void entry_action_led_strip_on(led_control_fsm_t *fsm)
     LED_CONTROL_LOGI("entry action for state -> [%s]", state_name[fsm->state.curr]);
     LED_CONTROL_LOGI("ON Animation Type   : %d", fsm->iface.on_animation);
     LED_CONTROL_LOGI("Executing LED Strip ON sequence");
+
+    // reset brightness level 
     fsm->iface.current_dim_level = fsm->iface.dim_up_level;
-
-    // led_strip_set_all(fsm->iface.strips[LED_STRIP_1].control, 255, 0, 0);
-    // led_strip_set_all(fsm->iface.strips[LED_STRIP_4].control, 255, 0, 0);
-
-    uint32_t strip_count = LED_STRIPn; // Total count including NULLs
-    uint32_t red = 255, green = 0, blue = 0; // Color: Red
-    uint32_t delay_ms = fsm->iface.animation_speed; // Delay in milliseconds
-    led_strip_t *strips[LED_STRIPn] = {NULL};
-
-    for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
-        strips[i] = fsm->iface.strips[i].control;
-    }
-
-    led_strip_forward_on_sync(strips, strip_count, red, green, blue, delay_ms);
+    led_control_execute_animation(fsm, fsm->iface.on_animation);
 }
 
 static void exit_action_led_strip_on(led_control_fsm_t *fsm)
@@ -117,19 +162,7 @@ static void exit_action_led_strip_on(led_control_fsm_t *fsm)
     LED_CONTROL_LOGI("OFF Animation Type   : %d", fsm->iface.off_animation);
     LED_CONTROL_LOGI("Executing LED Strip OFF sequence");
 
-    // led_strip_clear_all(fsm->iface.strips[LED_STRIP_1].control, 500);
-    // led_strip_clear_all(fsm->iface.strips[LED_STRIP_4].control, 500);
-
-    uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
-    uint32_t red = 0, green = 0, blue = 0;          // Color: black
-    uint32_t delay_ms = fsm->iface.animation_speed; // Delay in milliseconds
-    led_strip_t *strips[LED_STRIPn] = {NULL};
-
-    for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
-        strips[i] = fsm->iface.strips[i].control;
-    }
-
-    led_strip_backward_off_sync(strips, strip_count, red, green, blue, delay_ms);
+    led_control_execute_animation(fsm, fsm->iface.off_animation);
 }
 
 

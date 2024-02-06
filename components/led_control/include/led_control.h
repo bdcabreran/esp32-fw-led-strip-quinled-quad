@@ -58,6 +58,8 @@ typedef enum
 typedef enum 
 {
     LED_ANIMATION_INVALID = 0,
+    LED_ANIMATION_LED_ON,           // turn on the leds
+    LED_ANIMATION_LED_OFF,           // turn off the leds
     LED_ANIMATION_LED_FORWARD_ON,   // turn on the leds from the first to the last
     LED_ANIMATION_LED_BACKWARD_OFF, // turn off the leds from the last to the first
     LED_ANIMATION_LAST,
