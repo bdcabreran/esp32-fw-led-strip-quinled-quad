@@ -10,7 +10,7 @@
 
 #define BUTTON1_GPIO        (25) // GPIO number for button 1
 #define DEBOUNCE_TIME_MS    (50) // Debounce time in milliseconds
-#define LONG_PRESS_THRESHOLD_MS (500) // Long press threshold in milliseconds
+#define LONG_PRESS_THRESHOLD_MS (300) // Long press threshold in milliseconds
 
 static QueueHandle_t button_evt_queue;
 

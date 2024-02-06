@@ -54,13 +54,13 @@ char *event_router_get_task_name(task_id_t id)
 
 
 void event_router_init(void) {
-    EVT_ROUTER_LOGI("Initializing Event Router...");
     event_queue = xQueueCreate(MAX_QUEUE_ITEMS, sizeof(event_t));
     if (event_queue == NULL) {
         EVT_ROUTER_LOGE("Failed to create event queue");
         return;
     }
     xTaskCreate(event_router_task, "event_router", 2048, NULL, 5, &event_router_handle);
+    EVT_ROUTER_LOGI("Initialized");
 }
 
 
