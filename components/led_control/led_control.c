@@ -94,6 +94,21 @@ static void entry_action_led_strip_on(led_control_fsm_t *fsm)
     LED_CONTROL_LOGI("entry action for state -> [%s]", state_name[fsm->state.curr]);
     LED_CONTROL_LOGI("ON Animation Type   : %d", fsm->iface.on_animation);
     LED_CONTROL_LOGI("Executing LED Strip ON sequence");
+    fsm->iface.current_dim_level = fsm->iface.dim_up_level;
+
+    // led_strip_set_all(fsm->iface.strips[LED_STRIP_1].control, 255, 0, 0);
+    // led_strip_set_all(fsm->iface.strips[LED_STRIP_4].control, 255, 0, 0);
+
+    uint32_t strip_count = LED_STRIPn; // Total count including NULLs
+    uint32_t red = 255, green = 0, blue = 0; // Color: Red
+    uint32_t delay_ms = fsm->iface.animation_speed; // Delay in milliseconds
+    led_strip_t *strips[LED_STRIPn] = {NULL};
+
+    for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
+        strips[i] = fsm->iface.strips[i].control;
+    }
+
+    led_strip_forward_on_sync(strips, strip_count, red, green, blue, delay_ms);
 }
 
 static void exit_action_led_strip_on(led_control_fsm_t *fsm)
@@ -101,6 +116,20 @@ static void exit_action_led_strip_on(led_control_fsm_t *fsm)
     LED_CONTROL_LOGI("exit action for state -> [%s]", state_name[fsm->state.curr]);
     LED_CONTROL_LOGI("OFF Animation Type   : %d", fsm->iface.off_animation);
     LED_CONTROL_LOGI("Executing LED Strip OFF sequence");
+
+    // led_strip_clear_all(fsm->iface.strips[LED_STRIP_1].control, 500);
+    // led_strip_clear_all(fsm->iface.strips[LED_STRIP_4].control, 500);
+
+    uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
+    uint32_t red = 0, green = 0, blue = 0;          // Color: black
+    uint32_t delay_ms = fsm->iface.animation_speed; // Delay in milliseconds
+    led_strip_t *strips[LED_STRIPn] = {NULL};
+
+    for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
+        strips[i] = fsm->iface.strips[i].control;
+    }
+
+    led_strip_backward_off_sync(strips, strip_count, red, green, blue, delay_ms);
 }
 
 
@@ -129,21 +158,28 @@ static void on_state_led_strip_off(led_control_fsm_t *fsm)
 
 static void on_state_led_strip_on(led_control_fsm_t *fsm)
 {
-
     switch (fsm->event.id)
     {
         case EVT_BUTTON_LONG_PRESS:
         case EVT_TOUCH_SENSOR_LONG_PRESS:
         {
+            uint8_t brightness = 0;
+            
             if (fsm->iface.current_dim_level == fsm->iface.dim_up_level)
             {
                 fsm->iface.current_dim_level = fsm->iface.dim_down_level; // dim down
-                LED_CONTROL_LOGI("Dimming down to level [%d]", fsm->iface.current_dim_level);
+                brightness = (fsm->iface.current_dim_level - 1)*10;
+                LED_CONTROL_LOGI("Brightness set to [%d] %%", brightness);
+                led_strip_dim(fsm->iface.strips[LED_STRIP_1].control, brightness);
+                led_strip_dim(fsm->iface.strips[LED_STRIP_4].control, brightness);
             }
             else
             {
                 fsm->iface.current_dim_level = fsm->iface.dim_up_level; // dim up
-                LED_CONTROL_LOGI("Dimming up to level [%d]", fsm->iface.current_dim_level);
+                brightness = (fsm->iface.current_dim_level - 1)*10;
+                LED_CONTROL_LOGI("Brightness set to [%d] %%", brightness);
+                led_strip_dim(fsm->iface.strips[LED_STRIP_1].control, brightness);
+                led_strip_dim(fsm->iface.strips[LED_STRIP_4].control, brightness);
             }
         } break;
 

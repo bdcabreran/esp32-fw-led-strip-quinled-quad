@@ -170,8 +170,11 @@ void set_led_color(led_strip_t *strip, uint32_t index, uint32_t red, uint32_t gr
  */
 esp_err_t led_strip_denit(led_strip_t *strip);
 
-// #ifdef __cplusplus
-// }
-// #endif
+esp_err_t led_strip_set_all(led_strip_t *strip, uint32_t red, uint32_t green, uint32_t blue);
+esp_err_t led_strip_dim(led_strip_t *strip, uint8_t percentage);
+esp_err_t led_strip_clear_all(led_strip_t *strip, uint32_t timeout_ms);
+esp_err_t led_strip_forward_on_sync(led_strip_t *strips[], uint32_t strip_count, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms);
+esp_err_t led_strip_backward_off_sync(led_strip_t *strips[], uint32_t strip_count, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms);
+
 
 #endif

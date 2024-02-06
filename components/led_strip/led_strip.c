@@ -78,7 +78,8 @@ typedef struct {
     rmt_channel_t rmt_channel;
     uint32_t strip_len;
     led_timing_t timing;  
-    uint8_t *buffer;
+    uint8_t *buffer;           // Current (possibly dimmed) colors
+    uint8_t *original_buffer; // Original color values
 
 } led_controller_t;
 
@@ -233,6 +234,13 @@ static esp_err_t led_controller_set_pixel(led_strip_t *strip, uint32_t index, ui
     led_controller->buffer[start + 0] = green & 0xFF;
     led_controller->buffer[start + 1] = red & 0xFF;
     led_controller->buffer[start + 2] = blue & 0xFF;
+
+    // Original code for setting pixel
+    // Additionally, store the color in original_buffer
+    led_controller->original_buffer[start + 0] = green & 0xFF;
+    led_controller->original_buffer[start + 1] = red & 0xFF;
+    led_controller->original_buffer[start + 2] = blue & 0xFF;
+
     return ESP_OK;
 err:
     return ret;
@@ -271,11 +279,16 @@ led_strip_t *led_strip_new_rmt(const led_strip_config_t *config, led_strip_type_
     STRIP_CHECK(config, "configuration can't be null", err, NULL);
 
     // 24 bits per led
-    uint32_t led_controller_size = sizeof(led_controller_t) + config->max_leds * 3;
+    uint32_t led_controller_size = sizeof(led_controller_t) + (config->max_leds * 3)*2;
     led_controller_t *led_controller = calloc(1, led_controller_size);
+
     STRIP_CHECK(led_controller, "request memory for led_controller failed", err, NULL);
 
-    led_controller->buffer = (uint8_t*)led_controller + sizeof(led_controller_t);
+    // Assign the buffer pointer to immediately after the led_controller struct
+    led_controller->buffer = (uint8_t *)led_controller + sizeof(led_controller_t);
+
+    // Assign the original_buffer pointer to immediately after the buffer
+    led_controller->original_buffer = led_controller->buffer + (config->max_leds * 3);
 
 
     uint32_t counter_clk_hz = 0;
@@ -396,4 +409,136 @@ void set_led_color(led_strip_t *strip, uint32_t index, uint32_t red, uint32_t gr
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Refresh LED Color failed");
     }
+}
+
+
+esp_err_t led_strip_set_all(led_strip_t *strip, uint32_t red, uint32_t green, uint32_t blue) {
+    if (!strip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    led_controller_t *led_controller = __containerof(strip, led_controller_t, parent);
+    for (uint32_t i = 0; i < led_controller->strip_len; i++) {
+        led_controller_set_pixel(strip, i, red, green, blue);
+    }
+
+    // You might want to refresh the strip here or leave it to the user to call refresh separately.
+    return strip->refresh(strip, 100);
+}
+
+esp_err_t led_strip_dim(led_strip_t *strip, uint8_t percentage) {
+    if (!strip || percentage > 100) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    led_controller_t *led_controller = __containerof(strip, led_controller_t, parent);
+    for (uint32_t i = 0; i < led_controller->strip_len * 3; i++) {
+        // Apply dimming based on the original color values
+        uint32_t original_color_value = led_controller->original_buffer[i];
+        led_controller->buffer[i] = (original_color_value * percentage) / 100;
+    }
+
+    return strip->refresh(strip, 100);
+}
+
+
+// This function is just a wrapper for the existing clear method.
+esp_err_t led_strip_clear_all(led_strip_t *strip, uint32_t timeout_ms) {
+    if (!strip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    // Call the existing clear function.
+    return strip->clear(strip, timeout_ms);
+}
+
+esp_err_t led_strip_forward_on(led_strip_t *strip, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms) {
+    if (!strip) return ESP_ERR_INVALID_ARG;
+    
+    led_controller_t *led_controller = __containerof(strip, led_controller_t, parent);
+    for (uint32_t i = 0; i < led_controller->strip_len; i++) {
+        strip->set_pixel(strip, i, red, green, blue);
+        strip->refresh(strip, delay_ms); // Apply the change and wait
+        vTaskDelay(pdMS_TO_TICKS(delay_ms)); // Delay to create animation effect
+    }
+    return ESP_OK;
+}
+
+esp_err_t led_strip_backward_off(led_strip_t *strip, uint32_t delay_ms) {
+    if (!strip) return ESP_ERR_INVALID_ARG;
+    
+    led_controller_t *led_controller = __containerof(strip, led_controller_t, parent);
+    for (int32_t i = led_controller->strip_len - 1; i >= 0; i--) {
+        strip->set_pixel(strip, i, 0, 0, 0); // Turn off the LED
+        strip->refresh(strip, delay_ms); // Apply the change and wait
+        vTaskDelay(pdMS_TO_TICKS(delay_ms)); // Delay to create animation effect
+    }
+    return ESP_OK;
+}
+
+
+
+esp_err_t led_strip_forward_on_sync(led_strip_t *strips[], uint32_t strip_count, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms) {
+    // Validate input parameters
+    if (!strips || strip_count == 0) return ESP_ERR_INVALID_ARG;
+    
+    // Find the maximum length among the strips to ensure we loop through all LEDs
+    uint32_t max_len = 0;
+    for (uint32_t s = 0; s < strip_count; s++) {
+        if (strips[s] != NULL) {
+            led_controller_t *led_controller = __containerof(strips[s], led_controller_t, parent);
+            if (led_controller->strip_len > max_len) {
+                max_len = led_controller->strip_len;
+            }
+        }
+    }
+
+    // Loop through each LED position
+    for (uint32_t i = 0; i < max_len; i++) {
+        for (uint32_t s = 0; s < strip_count; s++) {
+            if (strips[s] != NULL) {
+                led_controller_t *led_controller = __containerof(strips[s], led_controller_t, parent);
+                // Check if the current strip length is greater than the current index
+                if (i < led_controller->strip_len) {
+                    strips[s]->set_pixel(strips[s], i, red, green, blue);
+                    strips[s]->refresh(strips[s], delay_ms); // Apply changes
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(delay_ms)); // Delay for synchronization
+    }
+    return ESP_OK;
+}
+
+
+esp_err_t led_strip_backward_off_sync(led_strip_t *strips[], uint32_t strip_count, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms) {
+    // Validate input parameters
+    if (!strips || strip_count == 0) return ESP_ERR_INVALID_ARG;
+    
+    // Find the maximum length among the strips to ensure we loop through all LEDs
+    uint32_t max_len = 0;
+    for (uint32_t s = 0; s < strip_count; s++) {
+        if (strips[s] != NULL) {
+            led_controller_t *led_controller = __containerof(strips[s], led_controller_t, parent);
+            if (led_controller->strip_len > max_len) {
+                max_len = led_controller->strip_len;
+            }
+        }
+    }
+
+    // Loop through each LED position in reverse order
+    for (int32_t i = max_len - 1; i >= 0; i--) {
+        for (uint32_t s = 0; s < strip_count; s++) {
+            if (strips[s] != NULL) {
+                led_controller_t *led_controller = __containerof(strips[s], led_controller_t, parent);
+                // Check if the current index is within the strip length
+                if (i < led_controller->strip_len) {
+                    // Turn off the LED at the current position
+                    strips[s]->set_pixel(strips[s], i, red, green, blue);
+                    strips[s]->refresh(strips[s], delay_ms); // Apply changes
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(delay_ms)); // Delay for synchronization
+    }
+    return ESP_OK;
 }
