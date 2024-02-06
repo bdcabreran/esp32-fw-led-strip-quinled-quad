@@ -250,12 +250,12 @@ static void led_control_fsm_init(led_control_fsm_t *fsm)
     fsm->iface.strips[LED_STRIP_1].led_count = LED1_STRIP_LED_NUMBER;
     fsm->iface.strips[LED_STRIP_4].led_count = LED4_STRIP_LED_NUMBER;
 
-    fsm->iface.strips[LED_STRIP_1].control =  led_strip_init(LED1_RMT_TX_CHANNEL, LED1_RMT_TX_GPIO, fsm->iface.strips[LED_STRIP_1].led_count, LED_STRIP_WS2812);
+    fsm->iface.strips[LED_STRIP_1].control =  led_strip_init(LED1_RMT_TX_CHANNEL, LED1_RMT_TX_GPIO, fsm->iface.strips[LED_STRIP_1].led_count, LED_STRIP_WS2811_HIGH_SPEED);
     if (!fsm->iface.strips[LED_STRIP_1].control) {
         LED_CONTROL_LOGI("LED strip [%d] initialization failed", LED_STRIP_1 + 1);
         return;
     }
-    fsm->iface.strips[LED_STRIP_4].control =  led_strip_init(LED4_RMT_TX_CHANNEL, LED4_RMT_TX_GPIO, fsm->iface.strips[LED_STRIP_4].led_count, LED_STRIP_WS2812);
+    fsm->iface.strips[LED_STRIP_4].control =  led_strip_init(LED4_RMT_TX_CHANNEL, LED4_RMT_TX_GPIO, fsm->iface.strips[LED_STRIP_4].led_count, LED_STRIP_WS2811_HIGH_SPEED);
     if (!fsm->iface.strips[LED_STRIP_4].control) {
         LED_CONTROL_LOGI("LED strip [%d] initialization failed", LED_STRIP_4 + 1);
         return;
