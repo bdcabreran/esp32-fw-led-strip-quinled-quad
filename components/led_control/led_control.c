@@ -15,25 +15,21 @@
 #define LED1_RMT_TX_CHANNEL RMT_CHANNEL_0
 #define LED1_RMT_TX_GPIO (16)
 #define LED1_STRIP_LED_NUMBER (30)
-#define LED1_CHASE_SPEED_MS (25)
 
 // LED2 Strip configuration
 #define LED2_RMT_TX_CHANNEL RMT_CHANNEL_1
 #define LED2_RMT_TX_GPIO (3)
 #define LED2_STRIP_LED_NUMBER (30)
-#define LED2_CHASE_SPEED_MS (50)
 
 // LED3 Strip configuration
 #define LED3_RMT_TX_CHANNEL RMT_CHANNEL_2
 #define LED3_RMT_TX_GPIO (1)
 #define LED3_STRIP_LED_NUMBER (30)
-#define LED3_CHASE_SPEED_MS (50)
 
 // LED4 Strip configuration
 #define LED4_RMT_TX_CHANNEL RMT_CHANNEL_3
 #define LED4_RMT_TX_GPIO (4)
 #define LED4_STRIP_LED_NUMBER (30)
-#define LED4_CHASE_SPEED_MS (100)
 
 static QueueHandle_t led_control_evt_queue;
 
