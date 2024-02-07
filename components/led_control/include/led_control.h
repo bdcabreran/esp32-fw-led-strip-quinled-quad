@@ -68,6 +68,7 @@ typedef enum
 typedef struct {
     led_strip_t *control; // Pointer to control interface of the LED strip
     uint16_t led_count;   // Number of LEDs in the strip
+    bool enable;          // Enable or disable the LED strip
 } led_strip_control_t;
 
 typedef struct {

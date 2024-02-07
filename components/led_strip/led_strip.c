@@ -442,6 +442,56 @@ esp_err_t led_strip_dim(led_strip_t *strip, uint8_t percentage) {
 }
 
 
+// Adjusted function prototype
+esp_err_t led_strip_dim_smooth(led_strip_t *strips[], uint32_t strip_count, uint8_t current_percentage, uint8_t target_percentage, uint32_t transition_time_ms) {
+    // Validate inputs
+    if (!strips || strip_count == 0 || target_percentage > 100 || current_percentage > 100) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    ESP_LOGI(TAG, "Dimming from %d%% to %d%% over %dms", current_percentage, target_percentage, transition_time_ms);
+
+    const uint32_t steps = 20; // Number of steps in the transition
+    const uint32_t delay_per_step_ms = transition_time_ms / steps;
+    int32_t step_size = (target_percentage - current_percentage) / (int32_t)steps;
+
+    for (uint32_t step = 0; step <= steps; step++) {
+        // Calculate new brightness level for this step
+        uint8_t new_percentage = current_percentage + (step_size * step);
+
+        for (uint32_t strip_index = 0; strip_index < strip_count; strip_index++) {
+            if (strips[strip_index] == NULL) continue; // Skip if strip is NULL
+
+            led_controller_t *led_controller = __containerof(strips[strip_index], led_controller_t, parent);
+            for (uint32_t i = 0; i < led_controller->strip_len * 3; i++) {
+                uint32_t original_color_value = led_controller->original_buffer[i];
+                led_controller->buffer[i] = (original_color_value * new_percentage) / 100;
+            }
+            
+            // Refresh the strip to apply the new brightness
+            strips[strip_index]->refresh(strips[strip_index], 100);
+        }
+
+        // Delay to create smooth transition
+        vTaskDelay(pdMS_TO_TICKS(delay_per_step_ms));
+    }
+
+    // Ensure the final brightness is set to the target value for each strip
+    for (uint32_t strip_index = 0; strip_index < strip_count; strip_index++) {
+        if (strips[strip_index] == NULL) continue; // Skip if strip is NULL
+
+        led_controller_t *led_controller = __containerof(strips[strip_index], led_controller_t, parent);
+        for (uint32_t i = 0; i < led_controller->strip_len * 3; i++) {
+            uint32_t original_color_value = led_controller->original_buffer[i];
+            led_controller->buffer[i] = (original_color_value * target_percentage) / 100;
+        }
+        strips[strip_index]->refresh(strips[strip_index], 100);
+    }
+
+    return ESP_OK;
+}
+
+
 // This function is just a wrapper for the existing clear method.
 esp_err_t led_strip_clear_all(led_strip_t *strip, uint32_t timeout_ms) {
     if (!strip) {

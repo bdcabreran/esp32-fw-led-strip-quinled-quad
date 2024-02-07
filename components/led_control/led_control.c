@@ -11,25 +11,38 @@
 #include "led_strip.h"
 
 
+//*********************** USER CONFIGURATION ****************************************//
 // LED1 Strip configuration
-#define LED1_RMT_TX_CHANNEL RMT_CHANNEL_0
-#define LED1_RMT_TX_GPIO (16)
-#define LED1_STRIP_LED_NUMBER (30)
+#define LED1_RMT_TX_CHANNEL   RMT_CHANNEL_0
+#define LED1_RMT_TX_GPIO      (16)
+#define LED1_STRIP_LED_COUNT  (30)
+#define LED1_STRIP_ENABLE     (1)   // 1: enable, 0: disable
 
 // LED2 Strip configuration
-#define LED2_RMT_TX_CHANNEL RMT_CHANNEL_1
-#define LED2_RMT_TX_GPIO (3)
-#define LED2_STRIP_LED_NUMBER (30)
+#define LED2_RMT_TX_CHANNEL   RMT_CHANNEL_1
+#define LED2_RMT_TX_GPIO      (3)
+#define LED2_STRIP_LED_COUNT  (30)
+#define LED2_STRIP_ENABLE     (0)   // 1: enable, 0: disable
 
 // LED3 Strip configuration
-#define LED3_RMT_TX_CHANNEL RMT_CHANNEL_2
-#define LED3_RMT_TX_GPIO (1)
-#define LED3_STRIP_LED_NUMBER (30)
+#define LED3_RMT_TX_CHANNEL   RMT_CHANNEL_2
+#define LED3_RMT_TX_GPIO      (1)
+#define LED3_STRIP_LED_COUNT  (30)
+#define LED3_STRIP_ENABLE     (0)   // 1: enable, 0: disable
 
 // LED4 Strip configuration
-#define LED4_RMT_TX_CHANNEL RMT_CHANNEL_3
-#define LED4_RMT_TX_GPIO (4)
-#define LED4_STRIP_LED_NUMBER (30)
+#define LED4_RMT_TX_CHANNEL   RMT_CHANNEL_3
+#define LED4_RMT_TX_GPIO      (4)
+#define LED4_STRIP_LED_COUNT  (30)
+#define LED4_STRIP_ENABLE     (1)   // 1: enable, 0: disable
+
+// LED Type Configuration
+#define LED_TYPE              (LED_STRIP_WS2811_HIGH_SPEED)
+
+// LED Animation Configuration
+#define LED_ANIMATION_SPEED   (50) // ms
+
+//*********************************************************************************** //
 
 static QueueHandle_t led_control_evt_queue;
 
@@ -71,17 +84,19 @@ static void led_control_execute_animation(led_control_fsm_t *fsm, led_animation_
     {
         case LED_ANIMATION_LED_ON:
         {
-            // only applied to strip 1 and strip 4
-            led_strip_set_all(fsm->iface.strips[LED_STRIP_1].control, 255, 0, 0);
-            led_strip_set_all(fsm->iface.strips[LED_STRIP_4].control, 255, 0, 0);
-        }
-            break;
+            for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
+                if (fsm->iface.strips[i].enable)
+                    led_strip_set_all(fsm->iface.strips[i].control, 255, 0, 0);
+            }
+        } break;
 
         case LED_ANIMATION_LED_OFF:
-            // only applied to strip 1 and strip 4
-            led_strip_clear_all(fsm->iface.strips[LED_STRIP_1].control, 500);
-            led_strip_clear_all(fsm->iface.strips[LED_STRIP_4].control, 500);
-            break;
+        {
+            for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
+                if (fsm->iface.strips[i].enable)
+                    led_strip_clear_all(fsm->iface.strips[i].control, 500);
+            }
+        } break;
 
         case LED_ANIMATION_LED_FORWARD_ON:
         {
@@ -91,24 +106,24 @@ static void led_control_execute_animation(led_control_fsm_t *fsm, led_animation_
             uint32_t delay_ms = fsm->iface.animation_speed; // Delay in milliseconds
             led_strip_t *strips[LED_STRIPn] = {NULL};
 
-            for(int i = LED_STRIP_1; i < LED_STRIPn; i++) 
-                strips[i] = fsm->iface.strips[i].control;
+            for(int i = LED_STRIP_1; i < LED_STRIPn; i++)
+                if (fsm->iface.strips[i].enable) 
+                    strips[i] = fsm->iface.strips[i].control;
             
             led_strip_forward_on_sync(strips, strip_count, red, green, blue, delay_ms);
-        }
-            break;
+        } break;
 
         case LED_ANIMATION_LED_BACKWARD_OFF:
         {
             // Code for LED BACKWARD OFF animation
-             uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
+            uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
             uint32_t red = 0, green = 0, blue = 0;           // Color: black
             uint32_t delay_ms = fsm->iface.animation_speed;  // Delay in milliseconds
             led_strip_t *strips[LED_STRIPn] = {NULL};
 
-            for(int i = LED_STRIP_1; i < LED_STRIPn; i++) {
-                strips[i] = fsm->iface.strips[i].control;
-            }
+            for(int i = LED_STRIP_1; i < LED_STRIPn; i++)
+                if (fsm->iface.strips[i].enable) 
+                    strips[i] = fsm->iface.strips[i].control;
 
             led_strip_backward_off_sync(strips, strip_count, red, green, blue, delay_ms);   
         }
@@ -183,7 +198,18 @@ static void on_state_led_strip_off(led_control_fsm_t *fsm)
     }
 }
 
+static void led_dim_smooth(led_control_fsm_t *fsm, uint8_t current_brightness, uint8_t target_brightness)
+{
+    uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
+    uint32_t transition_time_ms = 1000;             // Delay in milliseconds
+    led_strip_t *strips[LED_STRIPn] = {NULL};
 
+    for(int i = LED_STRIP_1; i < LED_STRIPn; i++)
+        if (fsm->iface.strips[i].enable) 
+            strips[i] = fsm->iface.strips[i].control;
+
+    led_strip_dim_smooth(strips, strip_count, current_brightness, target_brightness, transition_time_ms);
+}
 
 static void on_state_led_strip_on(led_control_fsm_t *fsm)
 {
@@ -192,24 +218,22 @@ static void on_state_led_strip_on(led_control_fsm_t *fsm)
         case EVT_BUTTON_LONG_PRESS:
         case EVT_TOUCH_SENSOR_LONG_PRESS:
         {
-            uint8_t brightness = 0;
+            uint8_t current_brightness = (fsm->iface.current_dim_level - 1)*10; // 0-100%
+            uint8_t target_brightness = 0;
             
             if (fsm->iface.current_dim_level == fsm->iface.dim_up_level)
             {
                 fsm->iface.current_dim_level = fsm->iface.dim_down_level; // dim down
-                brightness = (fsm->iface.current_dim_level - 1)*10;
-                LED_CONTROL_LOGI("Brightness set to [%d] %%", brightness);
-                led_strip_dim(fsm->iface.strips[LED_STRIP_1].control, brightness);
-                led_strip_dim(fsm->iface.strips[LED_STRIP_4].control, brightness);
+                target_brightness = (fsm->iface.current_dim_level - 1)*10;
+                led_dim_smooth(fsm, current_brightness, target_brightness);
             }
             else
             {
-                fsm->iface.current_dim_level = fsm->iface.dim_up_level; // dim up
-                brightness = (fsm->iface.current_dim_level - 1)*10;
-                LED_CONTROL_LOGI("Brightness set to [%d] %%", brightness);
-                led_strip_dim(fsm->iface.strips[LED_STRIP_1].control, brightness);
-                led_strip_dim(fsm->iface.strips[LED_STRIP_4].control, brightness);
+                fsm->iface.current_dim_level = fsm->iface.dim_up_level;   // dim up
+                target_brightness = (fsm->iface.current_dim_level - 1)*10;
+                led_dim_smooth(fsm, current_brightness, target_brightness);
             }
+            LED_CONTROL_LOGI("Brightness set to [%d] %%", target_brightness);
         } break;
 
         case EVT_TOUCH_SENSOR_SINGLE_PRESS:
@@ -235,26 +259,43 @@ static void led_control_fsm_init(led_control_fsm_t *fsm)
     memset(&fsm->iface, 0, sizeof(led_control_iface_t));
     fsm->state.last = STATE_INVALID;
 
+    // LED Animation default configuration
     fsm->iface.on_animation = LED_ANIMATION_LED_FORWARD_ON;
     fsm->iface.off_animation = LED_ANIMATION_LED_BACKWARD_OFF;
     fsm->iface.dim_up_level = DIM_LEVEL_10;  
-    fsm->iface.dim_down_level = DIM_LEVEL_3; 
+    fsm->iface.dim_down_level = DIM_LEVEL_1; 
     fsm->iface.current_dim_level = fsm->iface.dim_up_level;
-    fsm->iface.animation_speed = 50; // ms
+    fsm->iface.animation_speed = LED_ANIMATION_SPEED; // ms
 
     // only strip 1 and strip 4 are used
-    fsm->iface.strips[LED_STRIP_1].led_count = LED1_STRIP_LED_NUMBER;
-    fsm->iface.strips[LED_STRIP_4].led_count = LED4_STRIP_LED_NUMBER;
+    fsm->iface.strips[LED_STRIP_1].led_count = LED1_STRIP_LED_COUNT;
+    fsm->iface.strips[LED_STRIP_2].led_count = LED2_STRIP_LED_COUNT;
+    fsm->iface.strips[LED_STRIP_3].led_count = LED3_STRIP_LED_COUNT;
+    fsm->iface.strips[LED_STRIP_4].led_count = LED4_STRIP_LED_COUNT;
 
-    fsm->iface.strips[LED_STRIP_1].control =  led_strip_init(LED1_RMT_TX_CHANNEL, LED1_RMT_TX_GPIO, fsm->iface.strips[LED_STRIP_1].led_count, LED_STRIP_WS2811_HIGH_SPEED);
-    if (!fsm->iface.strips[LED_STRIP_1].control) {
-        LED_CONTROL_LOGI("LED strip [%d] initialization failed", LED_STRIP_1 + 1);
-        return;
-    }
-    fsm->iface.strips[LED_STRIP_4].control =  led_strip_init(LED4_RMT_TX_CHANNEL, LED4_RMT_TX_GPIO, fsm->iface.strips[LED_STRIP_4].led_count, LED_STRIP_WS2811_HIGH_SPEED);
-    if (!fsm->iface.strips[LED_STRIP_4].control) {
-        LED_CONTROL_LOGI("LED strip [%d] initialization failed", LED_STRIP_4 + 1);
-        return;
+    // define the strips enabled
+    fsm->iface.strips[LED_STRIP_1].enable = LED1_STRIP_ENABLE;
+    fsm->iface.strips[LED_STRIP_2].enable = LED2_STRIP_ENABLE;
+    fsm->iface.strips[LED_STRIP_3].enable = LED3_STRIP_ENABLE;
+    fsm->iface.strips[LED_STRIP_4].enable = LED4_STRIP_ENABLE;
+
+    // initialize the strips
+    for (int i = LED_STRIP_1; i < LED_STRIPn; i++)
+    {
+        uint16_t rmt_channels[] = {LED1_RMT_TX_CHANNEL, LED2_RMT_TX_CHANNEL, LED3_RMT_TX_CHANNEL, LED4_RMT_TX_CHANNEL};
+        uint16_t gpios[] = {LED1_RMT_TX_GPIO, LED2_RMT_TX_GPIO, LED3_RMT_TX_GPIO, LED4_RMT_TX_GPIO};
+
+        if (fsm->iface.strips[i].enable)
+        {
+            fsm->iface.strips[i].control = led_strip_init(rmt_channels[i], gpios[i], fsm->iface.strips[i].led_count, LED_TYPE);
+            if (!fsm->iface.strips[i].control) {
+                LED_CONTROL_LOGI("LED strip [%d] initialization failed", i + 1);
+                return;
+            }
+            else {
+                LED_CONTROL_LOGI("LED strip [%d] Initialized", i + 1);
+            }
+        }
     }
 
     led_control_print_info(fsm);
@@ -332,13 +373,10 @@ void led_control_task(void* arg)
 
     for (;;) {
 
-        if(led_control_read_event(fsm) == ESP_OK)
-        {
-            // LED_CONTROL_LOGI("Event received");
+        if(led_control_read_event(fsm) == ESP_OK) {
             led_control_process_event(fsm);
         }
-        else
-        {
+        else {
             LED_CONTROL_LOGE("Failed to read event");
         }
 

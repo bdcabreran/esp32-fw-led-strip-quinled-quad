@@ -30,6 +30,10 @@ void print_startup_message() {
     printf("Author: %s\n", author);
     printf("Date: %s\n", date);
     printf("Version: %s\n", version);
+
+    // Get and print the ESP-IDF version
+    const char* idfVersion = esp_get_idf_version();
+    printf("ESP-IDF Version: %s\n", idfVersion);
 }
 
 /**

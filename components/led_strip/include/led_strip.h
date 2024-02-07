@@ -176,5 +176,7 @@ esp_err_t led_strip_clear_all(led_strip_t *strip, uint32_t timeout_ms);
 esp_err_t led_strip_forward_on_sync(led_strip_t *strips[], uint32_t strip_count, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms);
 esp_err_t led_strip_backward_off_sync(led_strip_t *strips[], uint32_t strip_count, uint32_t red, uint32_t green, uint32_t blue, uint32_t delay_ms);
 void led_rainbow_chase(led_strip_t *strip, uint16_t start_rgb, uint16_t chase_speed_ms, uint16_t led_number);
+// esp_err_t led_strip_dim_smooth(led_strip_t *strip, uint8_t current_percentage, uint8_t target_percentage, uint32_t transition_time_ms);
+esp_err_t led_strip_dim_smooth(led_strip_t *strips[], uint32_t strip_count, uint8_t current_percentage, uint8_t target_percentage, uint32_t transition_time_ms);
 
 #endif
