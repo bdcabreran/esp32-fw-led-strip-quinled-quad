@@ -5,8 +5,11 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-
 #include "event_router.h"
+#include "esp_timer.h"
+
+// if marked as 0 then long press will be detected on timer expiry
+#define DETECT_LONG_PRESS_ON_BUTTON_RELEASE 0
 
 #define BUTTON1_GPIO        (25) // GPIO number for button 1
 #define DEBOUNCE_TIME_MS    (50) // Debounce time in milliseconds
@@ -28,13 +31,6 @@ if
 	#define BUTTON_LOGW(...) ESP_LOGW(TAG, LOG_COLOR(LOG_COLOR_BLUE) __VA_ARGS__)
 #endif
 
-
-void button_isr_handler(void* arg)
-{
-    uint32_t gpio_num = (uint32_t) arg;
-    xQueueSendFromISR(button_evt_queue, &gpio_num, NULL);
-}
-
 static void button_notify_event(uint32_t gpio_num, uint32_t btn_event)
 {
     event_t event = {0}; 
@@ -53,6 +49,14 @@ static void button_notify_event(uint32_t gpio_num, uint32_t btn_event)
     if(event.id != EVENT_INVALID)
         event_router_write(&event);
 }
+
+
+void button_isr_handler(void* arg)
+{
+    uint32_t gpio_num = (uint32_t) arg;
+    xQueueSendFromISR(button_evt_queue, &gpio_num, NULL);
+}
+
 
 /**
  * @brief Initialize button driver
@@ -74,12 +78,13 @@ static void button_driver_init(void)
 }
 
 
+#if DETECT_LONG_PRESS_ON_BUTTON_RELEASE
 /**
  * @brief Task to handle button events
  * 
  * @param arg 
  */
-void button_task(void* arg)
+void button_press_handler_task(void* arg)
 {
     esp_log_level_set("gpio", ESP_LOG_NONE);
     button_driver_init();
@@ -125,6 +130,81 @@ void button_task(void* arg)
         }
     }
 }
+#else 
+
+// Timer handle for long press detection
+static esp_timer_handle_t long_press_timer;
+
+// Global or static flag to indicate long press event handling
+static bool long_press_handled = false;
+
+// Forward declaration of the timer callback function
+static void long_press_timer_callback(void* arg);
+
+// Initialize the long press timer
+static void long_press_timer_init() {
+    const esp_timer_create_args_t timer_args = {
+        .callback = &long_press_timer_callback,
+        .arg = BUTTON1_GPIO, // Can be used to pass data to the callback function
+        .name = "long_press_timer"
+    };
+
+    ESP_ERROR_CHECK(esp_timer_create(&timer_args, &long_press_timer));
+}
+
+// Timer callback function
+static void long_press_timer_callback(void* arg) {
+    uint32_t gpio_num = (uint32_t)arg; // Cast and retrieve the GPIO number if needed
+    // Long press action
+    BUTTON_LOGI("Button %d evt [%s] via timer", gpio_num, "EVT_BUTTON_LONG_PRESS");
+    button_notify_event(gpio_num, EVT_BUTTON_LONG_PRESS);
+    long_press_handled = true;
+}
+
+// detect long press on timer expiry
+void button_press_handler_task(void* arg) {
+    esp_log_level_set("gpio", ESP_LOG_NONE);
+    button_driver_init();
+    long_press_timer_init(); // Initialize the long press timer
+
+    uint32_t gpio_num;
+    uint32_t last_state = 1;
+    uint32_t debounce_time = (DEBOUNCE_TIME_MS / portTICK_PERIOD_MS);
+
+    for (;;) {
+        if (xQueueReceive(button_evt_queue, &gpio_num, portMAX_DELAY)) {
+            uint32_t curr_state = gpio_get_level(gpio_num);
+            if (curr_state != last_state) {
+                vTaskDelay(debounce_time);
+                curr_state = gpio_get_level(gpio_num);
+                if (curr_state != last_state) {
+                    if (curr_state == 0) {  // Button is pressed
+                        // Start the long press timer
+                        long_press_handled = false; // Reset the flag
+                        esp_timer_start_once(long_press_timer, LONG_PRESS_THRESHOLD_MS * 1000);
+                    } else { // Button is released
+                        // Stop the long press timer if it's running
+                        esp_timer_stop(long_press_timer);
+
+                        if(long_press_handled == false)
+                        {
+                            // Trigger the single press event immediately, assuming timer did not expire
+                            BUTTON_LOGI("Button %d evt [%s]", gpio_num, "EVT_BUTTON_SINGLE_PRESS");
+                            button_notify_event(gpio_num, EVT_BUTTON_SINGLE_PRESS);
+                        }
+
+                        // Button release event
+                        BUTTON_LOGI("Button %d evt [%s]", gpio_num, "EVT_BUTTON_RELEASE");
+                        button_notify_event(gpio_num, EVT_BUTTON_RELEASE);
+                    }
+                    last_state = curr_state;
+                }
+            }
+        }
+    }
+}
+#endif
+
 
 /**
  * @brief Initialize button driver
@@ -133,7 +213,7 @@ void button_task(void* arg)
 void button_init(void)
 {
     button_evt_queue = xQueueCreate(5, sizeof(uint32_t));
-    xTaskCreate(button_task, "button_task", 2048, NULL, 2, NULL);
+    xTaskCreate(button_press_handler_task, "button_press_handler_task", 2048, NULL, 2, NULL);
     BUTTON_LOGI("Initialized");
 }
 
