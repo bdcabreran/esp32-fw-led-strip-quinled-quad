@@ -26,7 +26,7 @@
 
 // LED3 Strip configuration
 #define LED3_RMT_TX_CHANNEL   RMT_CHANNEL_2
-#define LED3_RMT_TX_GPIO      (1)
+#define LED3_RMT_TX_GPIO      (15)
 #define LED3_STRIP_LED_COUNT  (30)
 #define LED3_STRIP_ENABLE     (0)   // 1: enable, 0: disable
 
@@ -41,6 +41,7 @@
 
 // LED Animation Configuration
 #define LED_ANIMATION_SPEED   (50) // ms
+#define LED_DIM_TRANSITION_TIME (500) // time spend to dim up or down  // ms
 
 //*********************************************************************************** //
 
@@ -200,8 +201,8 @@ static void on_state_led_strip_off(led_control_fsm_t *fsm)
 
 static void led_dim_smooth(led_control_fsm_t *fsm, uint8_t current_brightness, uint8_t target_brightness)
 {
-    uint32_t strip_count = LED_STRIPn;              // Total count including NULLs
-    uint32_t transition_time_ms = 1000;             // Delay in milliseconds
+    uint32_t strip_count = LED_STRIPn;                      // Total count including NULLs
+    uint32_t transition_time_ms = LED_DIM_TRANSITION_TIME;  // Delay in milliseconds
     led_strip_t *strips[LED_STRIPn] = {NULL};
 
     for(int i = LED_STRIP_1; i < LED_STRIPn; i++)
