@@ -12,7 +12,7 @@
 // if marked as 0 then long press will be detected on timer expiry
 #define DETECT_LONG_PRESS_ON_TOUCH_RELEASE 0
 
-#define TOUCH_SENSOR_GPIO        (27) // GPIO number for TTP223B touch sensor (QuinLED-Dig-Uno Q2 - GPIO12)
+#define TOUCH_SENSOR_GPIO        (12) // GPIO number for TTP223B touch sensor (QuinLED-Dig-Uno Q2 - GPIO12)
 #define DEBOUNCE_TIME_MS         (50)  // Debounce time in milliseconds, adjust if necessary
 #define LONG_PRESS_THRESHOLD_MS  (300) // Long press threshold in milliseconds
 
@@ -139,7 +139,7 @@ static void long_press_timer_callback(void* arg);
 static void long_press_timer_init() {
     const esp_timer_create_args_t timer_args = {
         .callback = &long_press_timer_callback,
-        .arg = TOUCH_SENSOR_GPIO, // Can be used to pass data to the callback function
+        .arg = (void*)TOUCH_SENSOR_GPIO, // Can be used to pass data to the callback function
         .name = "long_press_timer"
     };
 

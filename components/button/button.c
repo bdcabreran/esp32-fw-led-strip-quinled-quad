@@ -145,7 +145,7 @@ static void long_press_timer_callback(void* arg);
 static void long_press_timer_init() {
     const esp_timer_create_args_t timer_args = {
         .callback = &long_press_timer_callback,
-        .arg = BUTTON1_GPIO, // Can be used to pass data to the callback function
+        .arg = (void*)BUTTON1_GPIO, // Can be used to pass data to the callback function
         .name = "long_press_timer"
     };
 
