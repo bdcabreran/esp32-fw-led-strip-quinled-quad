@@ -22,7 +22,7 @@
 #define LED2_RMT_TX_CHANNEL   RMT_CHANNEL_1
 #define LED2_RMT_TX_GPIO      (3)
 #define LED2_STRIP_LED_COUNT  (30)
-#define LED2_STRIP_ENABLE     (0)   // 1: enable, 0: disable
+#define LED2_STRIP_ENABLE     (1)   // 1: enable, 0: disable
 
 // LED3 Strip configuration
 #define LED3_RMT_TX_CHANNEL   RMT_CHANNEL_2
@@ -34,7 +34,7 @@
 #define LED4_RMT_TX_CHANNEL   RMT_CHANNEL_3
 #define LED4_RMT_TX_GPIO      (4)
 #define LED4_STRIP_LED_COUNT  (30)
-#define LED4_STRIP_ENABLE     (1)   // 1: enable, 0: disable
+#define LED4_STRIP_ENABLE     (0)   // 1: enable, 0: disable
 
 // LED Type Configuration
 #define LED_TYPE              (LED_STRIP_WS2811_HIGH_SPEED)
