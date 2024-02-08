@@ -14,7 +14,7 @@
 #include "event_router.h"
 #include "led_control.h"
 
-
+#define USE_MECHANICAL_BUTTON (1) // Set to 1 to use mechanical button, 0 to use touch sensor
 
 /**
  * @brief Print the startup message to the monitor
@@ -44,8 +44,11 @@ void app_main(void)
 {
     print_startup_message();
     event_router_init();
+    #if USE_MECHANICAL_BUTTON
     button_init();
+    #else 
     touch_init();
+    #endif
     led_control_init();
 }
 

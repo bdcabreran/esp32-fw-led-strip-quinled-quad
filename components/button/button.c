@@ -11,8 +11,8 @@
 // if marked as 0 then long press will be detected on timer expiry
 #define DETECT_LONG_PRESS_ON_BUTTON_RELEASE 0
 
-#define BUTTON1_GPIO        (25) // GPIO number for button 1
-#define DEBOUNCE_TIME_MS    (50) // Debounce time in milliseconds
+#define BUTTON1_GPIO            (12) // GPIO number for button 1 (QuinLED-Dig-Uno Q2 - GPIO12)
+#define DEBOUNCE_TIME_MS        (50) // Debounce time in milliseconds
 #define LONG_PRESS_THRESHOLD_MS (300) // Long press threshold in milliseconds
 
 static QueueHandle_t button_evt_queue;

@@ -12,7 +12,7 @@
 // if marked as 0 then long press will be detected on timer expiry
 #define DETECT_LONG_PRESS_ON_TOUCH_RELEASE 0
 
-#define TOUCH_SENSOR_GPIO        (27) // GPIO number for TTP223B touch sensor
+#define TOUCH_SENSOR_GPIO        (27) // GPIO number for TTP223B touch sensor (QuinLED-Dig-Uno Q2 - GPIO12)
 #define DEBOUNCE_TIME_MS         (50)  // Debounce time in milliseconds, adjust if necessary
 #define LONG_PRESS_THRESHOLD_MS  (300) // Long press threshold in milliseconds
 

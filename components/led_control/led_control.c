@@ -28,7 +28,7 @@
 #define LED3_RMT_TX_CHANNEL   RMT_CHANNEL_2
 #define LED3_RMT_TX_GPIO      (15)
 #define LED3_STRIP_LED_COUNT  (30)
-#define LED3_STRIP_ENABLE     (0)   // 1: enable, 0: disable
+#define LED3_STRIP_ENABLE     (1)   // 1: enable, 0: disable
 
 // LED4 Strip configuration
 #define LED4_RMT_TX_CHANNEL   RMT_CHANNEL_3
